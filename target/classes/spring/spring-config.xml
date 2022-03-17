@@ -1,0 +1,78 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+ http://www.springframework.org/schema/beans/spring-beans.xsd
+ http://www.springframework.org/schema/context
+ http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:property-placeholder location="classpath:jdbcConfig.properties"/>
+
+    <!-- 1) 获得数据库连接池对象，并交由 spring 同一管理 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+
+        <!-- 连接数据库的驱动，连接字符串，用户名和登录密码-->
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+
+        <!-- 数据池中最大连接数和最小连接数-->
+        <property name="maxActive" value="${jdbc.maxActive}"/>
+        <property name="minIdle" value="${jdbc.minIdle}"/>
+    </bean>
+
+    <!-- 2) 获取 SqlSessionFactory 对象，并交由 spring 管理-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 注入连接池
+         给 sqlsessionFactory 的属性 dataSource 赋值
+            ref="引用该 spring容器 中的另一个 bean的id"
+        -->
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 注入 映射文件 mapper
+         给 sqlsessionFactory 的属性 mapperLocation 赋值
+           value="映射文件 XXXmapper.xml 的相对路径"
+          -->
+        <property name="configLocation" value="classpath:SqlMapConfig.xml"/>
+<!--        <property name="mapperLocations" value="classpath:com/tb/dao/*.xml"/>-->
+    </bean>
+
+    <!-- 3) 获取 SqlSession 对象，并交由 spring 管理  用SqlSessionTemplate得到的SqlSession可以不用我们自己操心事务的管理，以及关闭操作-->
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
+        <!-- 给 SqlSessionTemplate 的构造函数赋值-->
+        <constructor-arg index="0" ref="sqlSessionFactory" />
+    </bean>
+
+    <bean id="scannerConfigurer" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <!-- name="basePackage":(起始)包名, 从这个包开始扫描-->
+        <property name="basePackage" value="com.tb.dao"/>
+
+    </bean>
+
+    <!--配置userMapper对象-->
+    <context:component-scan base-package="com.tb.dao.impl"/>
+    <bean id="studentDaoImpl" class="com.tb.dao.impl.StudentDaoImpl">
+        <property name="studentDao" ref="IStudentDao"/>
+    </bean>
+    <bean id="bookDaoImpl" class="com.tb.dao.impl.BookDaoImpl">
+        <property name="bookDao" ref="IBookDao"/>
+    </bean>
+    <bean id="borrowDaoImpl" class="com.tb.dao.impl.BorrowDaoImpl">
+        <property name="borrowDao" ref="IBorrowDao"/>
+    </bean>
+    <bean id="administratorDaoImpl" class="com.tb.dao.impl.AdministratorDaoImpl">
+        <property name="administratorDao" ref="IAdministratorDao"/>
+    </bean>
+
+
+    <bean class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--数据源-->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+<!--    <bean id="studentDao" class="org.mybatis.spring.mapper.MapperFactoryBean">-->
+<!--        <property name="mapperInterface" value="com.tb.dao.IStudentDao"/>-->
+<!--        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>-->
+<!--    </bean>-->
+</beans>
